@@ -42,7 +42,13 @@ export function taskFlowReducer(state, action) {
     case 'UPDATE_HABIT': return { ...state, habits: state.habits.map((habit) => habit.id === action.habit.id ? action.habit : habit) }
     case 'DELETE_HABIT': return { ...state, habits: state.habits.filter((habit) => habit.id !== action.id) }
     case 'TOGGLE_HABIT': return { ...state, habits: state.habits.map((habit) => habit.id === action.id ? toggleHabitDate(habit, action.date) : habit) }
-    case 'SAVE_DAILY_PLAN': return { ...state, dailyPlans: [{ ...action.plan, id: makeId() }, ...state.dailyPlans.filter((plan) => plan.date !== action.plan.date)] }
+    case 'SAVE_DAILY_PLAN': {
+      const availableMinutes = Number(action.plan.availableMinutes)
+      const items = action.plan.items.map((item) => ({ ...item, allocatedMinutes: Number(item.allocatedMinutes) }))
+      if (!Number.isFinite(availableMinutes) || availableMinutes <= 0 || items.some((item) => !Number.isFinite(item.allocatedMinutes) || item.allocatedMinutes <= 0)) return state
+      return { ...state, dailyPlans: [{ ...action.plan, availableMinutes, items, id: action.plan.id || makeId() }, ...state.dailyPlans.filter((plan) => plan.date !== action.plan.date)] }
+    }
+    case 'DELETE_DAILY_PLAN': return { ...state, dailyPlans: state.dailyPlans.filter((plan) => plan.id !== action.id) }
     case 'IMPORT': return action.state
     case 'RESET': return createInitialState()
     default: return state
@@ -53,7 +59,13 @@ export function TaskFlowProvider({ children }) {
   const [state, dispatch] = useReducer(taskFlowReducer, undefined, () => loadState())
   const [persistenceError, setPersistenceError] = useState(false)
   useEffect(() => setPersistenceError(!saveState(state)), [state])
-  useEffect(() => { const result = completeExpiredSession(state.activeFocusSession, state.focusSessions); if (result.completed) dispatch({ type: 'COMPLETE_FOCUS', session: result.completed }) }, [])
+  useEffect(() => {
+    const recover = () => { const result = completeExpiredSession(state.activeFocusSession, state.focusSessions); if (result.completed) dispatch({ type: 'COMPLETE_FOCUS', session: result.completed }); else if (!result.active && state.activeFocusSession) dispatch({ type: 'CLEAR_ACTIVE_FOCUS' }) }
+    recover()
+    if (!state.activeFocusSession || state.activeFocusSession.status !== 'running') return undefined
+    const id = setInterval(recover, 1000)
+    return () => clearInterval(id)
+  }, [state.activeFocusSession, state.focusSessions])
   const api = useMemo(() => ({
     ...state, persistenceError,
     addTask: (task) => dispatch({ type: 'ADD_TASK', task }),
@@ -76,6 +88,7 @@ export function TaskFlowProvider({ children }) {
     deleteHabit: (id) => dispatch({ type: 'DELETE_HABIT', id }),
     toggleHabit: (id, date) => dispatch({ type: 'TOGGLE_HABIT', id, date }),
     saveDailyPlan: (plan) => dispatch({ type: 'SAVE_DAILY_PLAN', plan }),
+    deleteDailyPlan: (id) => dispatch({ type: 'DELETE_DAILY_PLAN', id }),
     importState: (nextState) => dispatch({ type: 'IMPORT', state: nextState }),
     reset: () => dispatch({ type: 'RESET' }),
   }), [state, persistenceError])

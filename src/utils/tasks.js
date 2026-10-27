@@ -33,6 +33,7 @@ export function createRecurringTask(task) {
   return {
     ...task,
     id: makeId(),
+    status: 'todo',
     completed: false,
     completedAt: null,
     dueDate: addDays(task.dueDate, task.recurrence === 'weekly' ? 7 : 1),

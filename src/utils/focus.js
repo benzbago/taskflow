@@ -31,7 +31,8 @@ export function completeExpiredSession(active, history, now = Date.now(), force 
   if (!active || history.some((item) => item.id === active.id)) return { active: null, completed: null }
   if (!force && (active.status !== 'running' || remainingMs(active, now) > 0)) return { active, completed: null }
   const actual = force ? elapsedMs(active, now) : active.durationMs
-  return { active: null, completed: { id: active.id, type: active.type, taskId: active.taskId, durationMs: Math.min(active.durationMs, actual), startedAt: active.startedAt, completedAt: new Date(now).toISOString(), date: localDateKey(new Date(now)) } }
+  const completedAt = force ? now : Date.parse(active.endsAt)
+  return { active: null, completed: { id: active.id, type: active.type, taskId: active.taskId, durationMs: Math.min(active.durationMs, actual), startedAt: active.startedAt, completedAt: new Date(completedAt).toISOString(), date: localDateKey(new Date(completedAt)) } }
 }
 
 export function focusMetrics(sessions, today = localDateKey()) {

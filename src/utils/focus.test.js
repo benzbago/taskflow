@@ -28,4 +28,12 @@ describe('timestamp focus sessions', () => {
     const paused = pauseFocusSession(createFocusSession({ now: 1_000, durationMinutes: 1 }), 30_000)
     expect(completeExpiredSession(paused, [], 120_000).completed).toBeNull()
   })
+
+  test('attributes delayed automatic recovery to the persisted deadline', () => {
+    const started = new Date(2026, 9, 26, 23, 58).getTime()
+    const active = createFocusSession({ now: started, durationMinutes: 1 })
+    const result = completeExpiredSession(active, [], new Date(2026, 9, 27, 9).getTime())
+    expect(result.completed.date).toBe('2026-10-26')
+    expect(result.completed.completedAt).toBe(active.endsAt)
+  })
 })

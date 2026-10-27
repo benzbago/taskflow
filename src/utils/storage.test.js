@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createInitialState, loadState, parseImport, saveState, serializeState, STORAGE_RECOVERY_KEY } from './storage'
+import { createInitialState, loadState, parseImport, preserveCurrentWorkspace, saveState, serializeState, STORAGE_RECOVERY_KEY } from './storage'
 
 describe('versioned persistence', () => {
   test('returns defaults for corrupt storage', () => {
@@ -16,6 +16,16 @@ describe('versioned persistence', () => {
 
   test('rejects an import without valid task structure', () => {
     expect(() => parseImport(JSON.stringify({ version: 1, tasks: [{ nope: true }], categories: [], settings: {} }))).toThrow('valid TaskFlow backup')
+  })
+
+  test('rejects damaged v1 collections and malformed feature records', () => {
+    expect(() => parseImport(JSON.stringify({ version: 1, tasks: 'damaged', categories: [], settings: {} }))).toThrow('valid TaskFlow backup')
+    const state = createInitialState()
+    state.dailyPlans = [{ id: 'p', date: '2026-10-27', availableMinutes: 60, createdAt: new Date().toISOString(), items: [null] }]
+    expect(() => parseImport(JSON.stringify(state))).toThrow('valid TaskFlow backup')
+    state.dailyPlans = []
+    state.activeFocusSession = { id: 'f', type: 'focus', durationMs: 1000 }
+    expect(() => parseImport(JSON.stringify(state))).toThrow('valid TaskFlow backup')
   })
 
   test('rejects malformed nested and timestamp values', () => {
@@ -41,5 +51,20 @@ describe('versioned persistence', () => {
   test('reports storage write failure instead of throwing', () => {
     const storage = { setItem: () => { throw new DOMException('full', 'QuotaExceededError') } }
     expect(saveState(createInitialState(), storage)).toBe(false)
+  })
+
+  test('blocks migration overwrite when recovery cannot be preserved', () => {
+    const legacy = JSON.stringify({ version: 1, tasks: [], categories: [], settings: {} })
+    const storage = { getItem: () => legacy, setItem: (key) => { if (key === STORAGE_RECOVERY_KEY) throw new Error('quota') } }
+    const state = loadState(storage)
+    expect(state.settings.migrationWriteBlocked).toBe(true)
+    expect(saveState(state, storage)).toBe(false)
+  })
+
+  test('preserves the current workspace before import replacement', () => {
+    const values = new Map([['taskflow:v1', '{"current":true}']])
+    const storage = { getItem: (key) => values.get(key), setItem: (key, value) => values.set(key, value) }
+    expect(preserveCurrentWorkspace(storage)).toBe(true)
+    expect(values.get(STORAGE_RECOVERY_KEY)).toBe('{"current":true}')
   })
 })

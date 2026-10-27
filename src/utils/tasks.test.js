@@ -21,7 +21,7 @@ describe('task selectors', () => {
 
   test('creates the next daily recurrence only after completion', () => {
     const next = createRecurringTask({ ...tasks[0], recurrence: 'daily', completed: true })
-    expect(next).toMatchObject({ title: 'Later low', dueDate: '2026-11-03', completed: false, recurrence: 'daily' })
+    expect(next).toMatchObject({ title: 'Later low', dueDate: '2026-11-03', status: 'todo', completed: false, recurrence: 'daily' })
     expect(next.id).not.toBe('1')
   })
 

@@ -34,4 +34,10 @@ describe('recurring completion', () => {
     const next = taskFlowReducer(state, { type:'DUPLICATE_TASK', id:'done' })
     expect(next.tasks[0]).toMatchObject({ status:'todo', completed:false, completedAt:null })
   })
+
+  test('rejects non-positive daily plan allocations', () => {
+    const state = createInitialState()
+    const next = taskFlowReducer(state, { type:'SAVE_DAILY_PLAN', plan:{ date:'2026-10-27', availableMinutes:60, items:[{ id:'i', taskId:'t', allocatedMinutes:-5 }] } })
+    expect(next).toBe(state)
+  })
 })

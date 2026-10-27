@@ -13,6 +13,13 @@ export function normalizeTask(task) {
   }
 }
 
+export function isValidV1State(value) {
+  return Boolean(value && value.version === 1 && Array.isArray(value.tasks) && Array.isArray(value.categories) &&
+    value.settings && typeof value.settings === 'object' &&
+    value.tasks.every((task) => task && typeof task.id === 'string' && typeof task.title === 'string' && typeof task.completed === 'boolean') &&
+    value.categories.every((category) => category && typeof category.id === 'string' && typeof category.name === 'string'))
+}
+
 export function migrateState(value = {}) {
   return {
     version: 2,

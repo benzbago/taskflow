@@ -25,4 +25,10 @@ describe('habit completion and streaks', () => {
     expect(stats.currentStreak).toBe(2)
     expect(stats.longestStreak).toBe(2)
   })
+
+  test('weekly review ignores completions after the selected date', () => {
+    const stats = habitStats(habit({ type: 'weekly', target: 2 }, ['2026-10-26', '2026-10-28']), '2026-10-27')
+    expect(stats.consistency).toBe(50)
+    expect(stats.currentStreak).toBe(0)
+  })
 })

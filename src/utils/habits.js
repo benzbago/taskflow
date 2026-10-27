@@ -18,7 +18,7 @@ function mondayKey(dateKey) {
 
 function weeklyStats(habit, today) {
   const counts = new Map()
-  for (const date of new Set(habit.completionDates || [])) counts.set(mondayKey(date), (counts.get(mondayKey(date)) || 0) + 1)
+  for (const date of new Set(habit.completionDates || [])) if (date <= today) counts.set(mondayKey(date), (counts.get(mondayKey(date)) || 0) + 1)
   const first = mondayKey(localDateKey(new Date(habit.createdAt))); const current = mondayKey(today); const weeks = []
   for (let key = first; key <= current; key = addDays(key, 7)) weeks.push(key)
   const qualified = (key) => (counts.get(key) || 0) >= (habit.schedule.target || 1)
@@ -32,7 +32,7 @@ function weeklyStats(habit, today) {
 export function habitStats(habit, today = localDateKey()) {
   if (habit.schedule?.type === 'weekly') {
     const streaks = weeklyStats(habit, today)
-    const week = mondayKey(today); const completedThisWeek = habit.completionDates.filter((date) => mondayKey(date) === week).length
+    const week = mondayKey(today); const completedThisWeek = habit.completionDates.filter((date) => date <= today && mondayKey(date) === week).length
     return { ...streaks, consistency: Math.min(100, Math.round(completedThisWeek / (habit.schedule.target || 1) * 100)) }
   }
   const completed = new Set(habit.completionDates || []); const created = localDateKey(new Date(habit.createdAt)); const expected = []

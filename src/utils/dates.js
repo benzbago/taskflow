@@ -5,7 +5,7 @@ export function localDateKey(date = new Date()) {
 }
 
 export function parseLocalDate(key) {
-  if (!key) return null
+  if (!key) return new Date()
   const [year, month, day] = key.split('-').map(Number)
   return new Date(year, month - 1, day)
 }
