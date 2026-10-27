@@ -11,4 +11,20 @@ describe('recurring completion', () => {
     const twice = taskFlowReducer(reopened, { type: 'TOGGLE_TASK', id: 'routine' })
     expect(twice.tasks.filter((task) => task.dueDate === '2026-10-28')).toHaveLength(1)
   })
+
+  test('status transitions synchronize completion without duplicating recurrence', () => {
+    const state = createInitialState()
+    state.tasks = [{ id: 'routine', title: 'Stretch', status: 'todo', completed: false, completedAt: null, dueDate: '2026-10-27', recurrence: 'daily', subtasks: [] }]
+    const done = taskFlowReducer(state, { type: 'SET_TASK_STATUS', id: 'routine', status: 'done' })
+    expect(done.tasks.find((task) => task.id === 'routine')).toMatchObject({ status: 'done', completed: true })
+    const reopened = taskFlowReducer(done, { type: 'SET_TASK_STATUS', id: 'routine', status: 'in-progress' })
+    expect(reopened.tasks.find((task) => task.id === 'routine')).toMatchObject({ status: 'in-progress', completed: false, completedAt: null })
+    const redone = taskFlowReducer(reopened, { type: 'SET_TASK_STATUS', id: 'routine', status: 'done' })
+    expect(redone.tasks.filter((task) => task.dueDate === '2026-10-28')).toHaveLength(1)
+  })
+
+  test('reset clears all v2 feature collections', () => {
+    const state = { ...createInitialState(), habits: [{ id: 'h' }], focusSessions: [{ id: 'f' }], dailyPlans: [{ id: 'p' }], activeFocusSession: { id: 'active' } }
+    expect(taskFlowReducer(state, { type: 'RESET' })).toMatchObject({ habits: [], focusSessions: [], dailyPlans: [], activeFocusSession: null })
+  })
 })

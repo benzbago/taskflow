@@ -10,7 +10,7 @@ describe('versioned persistence', () => {
   test('round trips a versioned backup', () => {
     const state = createInitialState()
     const restored = parseImport(serializeState(state))
-    expect(restored.version).toBe(1)
+    expect(restored.version).toBe(2)
     expect(restored.categories.length).toBeGreaterThan(0)
   })
 

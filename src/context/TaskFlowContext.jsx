@@ -6,18 +6,21 @@ const TaskFlowContext = createContext(null)
 
 export function taskFlowReducer(state, action) {
   switch (action.type) {
-    case 'ADD_TASK': return { ...state, tasks: [{ ...action.task, id: makeId(), createdAt: new Date().toISOString(), completed: false, completedAt: null }, ...state.tasks] }
+    case 'ADD_TASK': return { ...state, tasks: [{ ...action.task, id: makeId(), createdAt: new Date().toISOString(), status: 'todo', completed: false, completedAt: null }, ...state.tasks] }
     case 'UPDATE_TASK': return { ...state, tasks: state.tasks.map((task) => task.id === action.task.id ? { ...task, ...action.task } : task) }
     case 'DELETE_TASK': return { ...state, tasks: state.tasks.filter((task) => task.id !== action.id) }
     case 'DUPLICATE_TASK': {
       const source = state.tasks.find((task) => task.id === action.id)
       return source ? { ...state, tasks: [{ ...source, id: makeId(), title: `${source.title} copy`, completed: false, completedAt: null, createdAt: new Date().toISOString() }, ...state.tasks] } : state
     }
-    case 'TOGGLE_TASK': {
+    case 'TOGGLE_TASK':
+    case 'SET_TASK_STATUS': {
       let recurring = null
       const tasks = state.tasks.map((task) => {
         if (task.id !== action.id) return task
-        const updated = { ...task, completed: !task.completed, completedAt: !task.completed ? new Date().toISOString() : null }
+        const nextStatus = action.type === 'SET_TASK_STATUS' ? action.status : task.completed ? (task.status === 'in-progress' ? 'in-progress' : 'todo') : 'done'
+        const completing = nextStatus === 'done'
+        const updated = { ...task, status: nextStatus, completed: completing, completedAt: completing ? task.completedAt || new Date().toISOString() : null }
         recurring = createRecurringTask(updated)
         return updated
       })
@@ -46,6 +49,7 @@ export function TaskFlowProvider({ children }) {
     deleteTask: (id) => dispatch({ type: 'DELETE_TASK', id }),
     duplicateTask: (id) => dispatch({ type: 'DUPLICATE_TASK', id }),
     toggleTask: (id) => dispatch({ type: 'TOGGLE_TASK', id }),
+    setTaskStatus: (id, status) => dispatch({ type: 'SET_TASK_STATUS', id, status }),
     toggleSubtask: (taskId, subtaskId) => dispatch({ type: 'TOGGLE_SUBTASK', taskId, subtaskId }),
     addCategory: (category) => dispatch({ type: 'ADD_CATEGORY', category }),
     updateCategory: (category) => dispatch({ type: 'UPDATE_CATEGORY', category }),
