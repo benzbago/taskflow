@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useReducer, useState } f
 import { createInitialState, loadState, saveState } from '../utils/storage'
 import { createRecurringTask, makeId, removeCategoryFromTasks } from '../utils/tasks'
 import { completeExpiredSession } from '../utils/focus'
+import { toggleHabitDate } from '../utils/habits'
 
 const TaskFlowContext = createContext(null)
 
@@ -37,6 +38,10 @@ export function taskFlowReducer(state, action) {
     case 'UPDATE_ACTIVE_FOCUS': return { ...state, activeFocusSession: action.session }
     case 'CLEAR_ACTIVE_FOCUS': return { ...state, activeFocusSession: null }
     case 'COMPLETE_FOCUS': return state.focusSessions.some((session) => session.id === action.session.id) ? { ...state, activeFocusSession: null } : { ...state, activeFocusSession: null, focusSessions: [...state.focusSessions, action.session] }
+    case 'ADD_HABIT': return { ...state, habits: [{ ...action.habit, id: makeId(), createdAt: new Date().toISOString(), completionDates: [] }, ...state.habits] }
+    case 'UPDATE_HABIT': return { ...state, habits: state.habits.map((habit) => habit.id === action.habit.id ? action.habit : habit) }
+    case 'DELETE_HABIT': return { ...state, habits: state.habits.filter((habit) => habit.id !== action.id) }
+    case 'TOGGLE_HABIT': return { ...state, habits: state.habits.map((habit) => habit.id === action.id ? toggleHabitDate(habit, action.date) : habit) }
     case 'IMPORT': return action.state
     case 'RESET': return createInitialState()
     default: return state
@@ -65,6 +70,10 @@ export function TaskFlowProvider({ children }) {
     updateActiveFocus: (session) => dispatch({ type: 'UPDATE_ACTIVE_FOCUS', session }),
     clearActiveFocus: () => dispatch({ type: 'CLEAR_ACTIVE_FOCUS' }),
     completeFocus: (session) => dispatch({ type: 'COMPLETE_FOCUS', session }),
+    addHabit: (habit) => dispatch({ type: 'ADD_HABIT', habit }),
+    updateHabit: (habit) => dispatch({ type: 'UPDATE_HABIT', habit }),
+    deleteHabit: (id) => dispatch({ type: 'DELETE_HABIT', id }),
+    toggleHabit: (id, date) => dispatch({ type: 'TOGGLE_HABIT', id, date }),
     importState: (nextState) => dispatch({ type: 'IMPORT', state: nextState }),
     reset: () => dispatch({ type: 'RESET' }),
   }), [state, persistenceError])
