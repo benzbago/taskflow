@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createRecurringTask, filterTasks, removeCategoryFromTasks, sortTasks } from './tasks'
+import { createRecurringTask, filterTasks, removeCategoryFromTasks, sortTasks, taskMetrics } from './tasks'
 
 const tasks = [
   { id: '1', title: 'Later low', completed: false, priority: 'low', dueDate: '2026-11-02', createdAt: '2026-10-01T09:00:00.000Z', categoryId: 'work' },
@@ -23,6 +23,11 @@ describe('task selectors', () => {
     const next = createRecurringTask({ ...tasks[0], recurrence: 'daily', completed: true })
     expect(next).toMatchObject({ title: 'Later low', dueDate: '2026-11-03', completed: false, recurrence: 'daily' })
     expect(next.id).not.toBe('1')
+  })
+
+  test('buckets completion timestamps by local calendar date', () => {
+    const localCompletion = new Date(2026, 9, 27, 0, 30).toISOString()
+    expect(taskMetrics([{ completed: true, completedAt: localCompletion }], '2026-10-27').completedToday).toBe(1)
   })
 })
 

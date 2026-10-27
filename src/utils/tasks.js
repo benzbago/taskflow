@@ -37,12 +37,13 @@ export function createRecurringTask(task) {
     completedAt: null,
     dueDate: addDays(task.dueDate, task.recurrence === 'weekly' ? 7 : 1),
     createdAt: new Date().toISOString(),
+    recurrenceSourceId: task.id,
     subtasks: (task.subtasks || []).map((item) => ({ ...item, id: makeId(), completed: false })),
   }
 }
 
 export function taskMetrics(tasks, today = localDateKey()) {
-  const completedToday = tasks.filter((task) => task.completedAt?.slice(0, 10) === today).length
+  const completedToday = tasks.filter((task) => task.completedAt && localDateKey(new Date(task.completedAt)) === today).length
   const pending = tasks.filter((task) => !task.completed).length
   const overdue = tasks.filter((task) => task.dueDate && !task.completed && task.dueDate < today).length
   const todays = tasks.filter((task) => task.dueDate === today)
@@ -54,7 +55,7 @@ export function analyticsData(tasks, days = 7) {
   const today = localDateKey()
   return Array.from({ length: days }, (_, index) => {
     const date = addDays(today, index - days + 1)
-    return { date, label: new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' }), completed: tasks.filter((task) => task.completedAt?.slice(0, 10) === date).length }
+    return { date, label: new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' }), completed: tasks.filter((task) => task.completedAt && localDateKey(new Date(task.completedAt)) === date).length }
   })
 }
 

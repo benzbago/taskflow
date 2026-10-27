@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitForElementToBeRemoved } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test } from 'vitest'
 import App from './App'
@@ -32,5 +32,14 @@ describe('TaskFlow experience', () => {
     await user.click(screen.getByRole('button', { name: /toggle theme/i }))
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(JSON.parse(localStorage.getItem('taskflow:v1')).settings.theme).toBe('dark')
+  })
+
+  test('closes task editor with Escape', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.keyboard('n')
+    expect(screen.getByRole('dialog', { name: /new task/i })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    await waitForElementToBeRemoved(() => screen.queryByRole('dialog', { name: /new task/i }))
   })
 })

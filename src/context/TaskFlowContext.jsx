@@ -1,10 +1,10 @@
-import { createContext, useContext, useEffect, useMemo, useReducer } from 'react'
+import { createContext, useContext, useEffect, useMemo, useReducer, useState } from 'react'
 import { createInitialState, loadState, saveState } from '../utils/storage'
 import { createRecurringTask, makeId, removeCategoryFromTasks } from '../utils/tasks'
 
 const TaskFlowContext = createContext(null)
 
-function reducer(state, action) {
+export function taskFlowReducer(state, action) {
   switch (action.type) {
     case 'ADD_TASK': return { ...state, tasks: [{ ...action.task, id: makeId(), createdAt: new Date().toISOString(), completed: false, completedAt: null }, ...state.tasks] }
     case 'UPDATE_TASK': return { ...state, tasks: state.tasks.map((task) => task.id === action.task.id ? { ...task, ...action.task } : task) }
@@ -21,7 +21,8 @@ function reducer(state, action) {
         recurring = createRecurringTask(updated)
         return updated
       })
-      return { ...state, tasks: recurring ? [recurring, ...tasks] : tasks }
+      const alreadyGenerated = recurring && tasks.some((task) => task.recurrenceSourceId === action.id && task.dueDate === recurring.dueDate)
+      return { ...state, tasks: recurring && !alreadyGenerated ? [recurring, ...tasks] : tasks }
     }
     case 'TOGGLE_SUBTASK': return { ...state, tasks: state.tasks.map((task) => task.id === action.taskId ? { ...task, subtasks: (task.subtasks || []).map((item) => item.id === action.subtaskId ? { ...item, completed: !item.completed } : item) } : task) }
     case 'ADD_CATEGORY': return { ...state, categories: [...state.categories, { ...action.category, id: makeId(), locked: false }] }
@@ -35,10 +36,11 @@ function reducer(state, action) {
 }
 
 export function TaskFlowProvider({ children }) {
-  const [state, dispatch] = useReducer(reducer, undefined, () => loadState())
-  useEffect(() => saveState(state), [state])
+  const [state, dispatch] = useReducer(taskFlowReducer, undefined, () => loadState())
+  const [persistenceError, setPersistenceError] = useState(false)
+  useEffect(() => setPersistenceError(!saveState(state)), [state])
   const api = useMemo(() => ({
-    ...state,
+    ...state, persistenceError,
     addTask: (task) => dispatch({ type: 'ADD_TASK', task }),
     updateTask: (task) => dispatch({ type: 'UPDATE_TASK', task }),
     deleteTask: (id) => dispatch({ type: 'DELETE_TASK', id }),
@@ -51,7 +53,7 @@ export function TaskFlowProvider({ children }) {
     setSettings: (settings) => dispatch({ type: 'SET_SETTINGS', settings }),
     importState: (nextState) => dispatch({ type: 'IMPORT', state: nextState }),
     reset: () => dispatch({ type: 'RESET' }),
-  }), [state])
+  }), [state, persistenceError])
   return <TaskFlowContext.Provider value={api}>{children}</TaskFlowContext.Provider>
 }
 
