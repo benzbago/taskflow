@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import {
-  Activity, Archive, BarChart3, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight,
+  Activity, Archive, BarChart3, BrainCircuit, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight,
   CirclePlus, Clock3, Columns3, Copy, Download, Edit3, Inbox, LayoutDashboard, Menu, Moon,
   MoreHorizontal, Palette, Pin, Plus, RotateCcw, Search, Settings2, Sun, Tags,
   Target, Trash2, Upload, X,
@@ -15,14 +15,15 @@ import { parseImport, serializeState } from './utils/storage'
 import FocusPage from './pages/FocusPage'
 import KanbanPage from './pages/KanbanPage'
 import HabitsPage from './pages/HabitsPage'
+import DailyPlannerPage from './pages/DailyPlannerPage'
 
 const NAV = [
   ['dashboard', 'Dashboard', LayoutDashboard], ['all', 'All tasks', Inbox], ['today', 'Today', Clock3],
   ['upcoming', 'Upcoming', CalendarDays], ['completed', 'Completed', CheckCircle2],
-  ['focus', 'Focus mode', Target], ['kanban', 'Kanban board', Columns3], ['habits', 'Habit tracker', Activity], ['calendar', 'Calendar', CalendarDays], ['categories', 'Categories', Tags], ['analytics', 'Analytics', BarChart3],
+  ['focus', 'Focus mode', Target], ['planner', 'Daily planner', BrainCircuit], ['kanban', 'Kanban board', Columns3], ['habits', 'Habit tracker', Activity], ['calendar', 'Calendar', CalendarDays], ['categories', 'Categories', Tags], ['analytics', 'Analytics', BarChart3],
 ]
 
-const PAGE_TITLES = { dashboard: 'Dashboard', all: 'All tasks', today: 'Today', upcoming: 'Upcoming', completed: 'Completed', focus: 'Focus mode', kanban: 'Kanban board', habits: 'Habit tracker', calendar: 'Calendar', categories: 'Categories', analytics: 'Productivity', appearance: 'Appearance', data: 'Data management' }
+const PAGE_TITLES = { dashboard: 'Dashboard', all: 'All tasks', today: 'Today', upcoming: 'Upcoming', completed: 'Completed', focus: 'Focus mode', planner: 'Daily planner', kanban: 'Kanban board', habits: 'Habit tracker', calendar: 'Calendar', categories: 'Categories', analytics: 'Productivity', appearance: 'Appearance', data: 'Data management' }
 
 function useTheme(settings, setSettings) {
   useEffect(() => {
@@ -43,11 +44,11 @@ function Sidebar({ page, setPage, open, setOpen }) {
       <p className="nav-label">Main</p>
       {NAV.slice(0, 5).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span>{counts[id] ? <em>{counts[id]}</em> : null}</button>)}
       <p className="nav-label">Productivity</p>
-      {NAV.slice(5, 8).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
+      {NAV.slice(5, 9).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
       <p className="nav-label">Organize</p>
-      {NAV.slice(8, 10).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
+      {NAV.slice(9, 11).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
       <p className="nav-label">Insights</p>
-      {NAV.slice(10).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
+      {NAV.slice(11).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
     </nav>
     <div className="sidebar-bottom"><button className={`nav-item ${page === 'appearance' ? 'active' : ''}`} onClick={() => { setPage('appearance'); setOpen(false) }}><Palette /> Appearance</button><button className={`nav-item ${page === 'data' ? 'active' : ''}`} onClick={() => { setPage('data'); setOpen(false) }}><Settings2 /> Data management</button><div className="storage-note"><Archive /> Stored privately in this browser</div></div>
   </aside>
@@ -60,7 +61,7 @@ function Topbar({ page, setNavOpen, onNew, toggleTheme }) {
 
 function TaskForm({ task, initialDate, onClose }) {
   const { categories, addTask, updateTask } = useTaskFlow()
-  const [form, setForm] = useState(() => task || { title: '', description: '', dueDate: initialDate || '', dueTime: '', priority: 'medium', categoryId: 'personal', recurrence: 'none', pinned: false, subtasks: [] })
+  const [form, setForm] = useState(() => task || { title: '', description: '', dueDate: initialDate || '', dueTime: '', priority: 'medium', categoryId: 'personal', recurrence: 'none', estimatedMinutes: null, pinned: false, subtasks: [] })
   const [subtask, setSubtask] = useState('')
   const [error, setError] = useState('')
   const set = (key, value) => setForm((current) => ({ ...current, [key]: value }))
@@ -78,7 +79,7 @@ function TaskForm({ task, initialDate, onClose }) {
     <div className="panel-header"><div><p className="eyebrow">{task ? 'Make changes' : 'Capture what matters'}</p><h2>{task ? 'Edit task' : 'New task'}</h2></div><button type="button" className="icon-button" onClick={onClose} aria-label="Close task form"><X /></button></div>
     <form onSubmit={submit} className="task-form"><label>Task title<input autoFocus value={form.title} onChange={(e) => { set('title', e.target.value); setError('') }} placeholder="What needs to be done?" /></label>{error && <p className="form-error" role="alert">{error}</p>}
       <label>Notes<textarea value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Add useful context…" rows="4" /></label>
-      <div className="form-grid"><label>Due date<input type="date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} /></label><label>Due time<input type="time" value={form.dueTime} onChange={(e) => set('dueTime', e.target.value)} /></label><label>Priority<select value={form.priority} onChange={(e) => set('priority', e.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label>Category<select value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>Repeat<select value={form.recurrence} onChange={(e) => set('recurrence', e.target.value)}><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label><label className="check-label"><input type="checkbox" checked={form.pinned} onChange={(e) => set('pinned', e.target.checked)} /> Pin this task</label></div>
+      <div className="form-grid"><label>Due date<input type="date" value={form.dueDate} onChange={(e) => set('dueDate', e.target.value)} /></label><label>Due time<input type="time" value={form.dueTime} onChange={(e) => set('dueTime', e.target.value)} /></label><label>Priority<select value={form.priority} onChange={(e) => set('priority', e.target.value)}><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label><label>Category<select value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>Estimated minutes<input type="number" min="5" step="5" list="estimate-options" value={form.estimatedMinutes || ''} onChange={(e) => set('estimatedMinutes', e.target.value ? Number(e.target.value) : null)} placeholder="30" /><datalist id="estimate-options">{[15,30,45,60,90].map((value)=><option value={value} key={value}/>)}</datalist></label><label>Repeat<select value={form.recurrence} onChange={(e) => set('recurrence', e.target.value)}><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label><label className="check-label"><input type="checkbox" checked={form.pinned} onChange={(e) => set('pinned', e.target.checked)} /> Pin this task</label></div>
       <div className="subtask-builder"><span>Subtasks</span><div><input value={subtask} onChange={(e) => setSubtask(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSubtask() } }} placeholder="Add a smaller step" /><button type="button" className="secondary-button" onClick={addSubtask}>Add</button></div>{form.subtasks?.map((item) => <p key={item.id}><Check /> {item.title}<button type="button" aria-label={`Remove subtask ${item.title}`} onClick={() => set('subtasks', form.subtasks.filter((entry) => entry.id !== item.id))}><X /></button></p>)}</div>
       <div className="panel-footer"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" type="submit">{task ? 'Save changes' : 'Create task'}</button></div>
     </form>
@@ -163,7 +164,7 @@ function DataPage() {
 }
 
 function AppShell() {
-  const state = useTaskFlow(); const [page, setPage] = useState('dashboard'); const [navOpen, setNavOpen] = useState(false); const [editor, setEditor] = useState(null); const [initialDate, setInitialDate] = useState(''); const [filters, setFilters] = useState(EMPTY_FILTERS); const [sort, setSort] = useState('dueDate'); const toggleTheme = useTheme(state.settings, state.setSettings)
+  const state = useTaskFlow(); const [page, setPage] = useState('dashboard'); const [navOpen, setNavOpen] = useState(false); const [editor, setEditor] = useState(null); const [initialDate, setInitialDate] = useState(''); const [focusTaskId, setFocusTaskId] = useState(null); const [filters, setFilters] = useState(EMPTY_FILTERS); const [sort, setSort] = useState('dueDate'); const toggleTheme = useTheme(state.settings, state.setSettings)
   const openNew = (date = localDateKey()) => { setInitialDate(typeof date === 'string' ? date : localDateKey()); setEditor({}) }; const openEdit = (task) => setEditor(task)
   useEffect(() => { const handler = (event) => { if (event.key.toLowerCase() === 'n' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) { event.preventDefault(); openNew() } }; addEventListener('keydown', handler); return () => removeEventListener('keydown', handler) }, [])
   const returnFocus = useRef(null)
@@ -171,7 +172,8 @@ function AppShell() {
   const content = useMemo(() => {
     if (page === 'dashboard') return <Dashboard onNew={openNew} onEdit={openEdit} filters={filters} setFilters={setFilters} sort={sort} setSort={setSort} />
     if (['all', 'today', 'upcoming', 'completed'].includes(page)) return <ListPage page={page} onNew={openNew} onEdit={openEdit} filters={filters} setFilters={setFilters} sort={sort} setSort={setSort} />
-    if (page === 'focus') return <FocusPage />
+    if (page === 'focus') return <FocusPage initialTaskId={focusTaskId} />
+    if (page === 'planner') return <DailyPlannerPage onStartFocus={(taskId) => { setFocusTaskId(taskId); setPage('focus') }} />
     if (page === 'kanban') return <KanbanPage onEdit={openEdit} />
     if (page === 'habits') return <HabitsPage />
     if (page === 'calendar') return <CalendarPage onNew={openNew} onEdit={openEdit} />

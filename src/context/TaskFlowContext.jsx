@@ -42,6 +42,7 @@ export function taskFlowReducer(state, action) {
     case 'UPDATE_HABIT': return { ...state, habits: state.habits.map((habit) => habit.id === action.habit.id ? action.habit : habit) }
     case 'DELETE_HABIT': return { ...state, habits: state.habits.filter((habit) => habit.id !== action.id) }
     case 'TOGGLE_HABIT': return { ...state, habits: state.habits.map((habit) => habit.id === action.id ? toggleHabitDate(habit, action.date) : habit) }
+    case 'SAVE_DAILY_PLAN': return { ...state, dailyPlans: [{ ...action.plan, id: makeId() }, ...state.dailyPlans.filter((plan) => plan.date !== action.plan.date)] }
     case 'IMPORT': return action.state
     case 'RESET': return createInitialState()
     default: return state
@@ -74,6 +75,7 @@ export function TaskFlowProvider({ children }) {
     updateHabit: (habit) => dispatch({ type: 'UPDATE_HABIT', habit }),
     deleteHabit: (id) => dispatch({ type: 'DELETE_HABIT', id }),
     toggleHabit: (id, date) => dispatch({ type: 'TOGGLE_HABIT', id, date }),
+    saveDailyPlan: (plan) => dispatch({ type: 'SAVE_DAILY_PLAN', plan }),
     importState: (nextState) => dispatch({ type: 'IMPORT', state: nextState }),
     reset: () => dispatch({ type: 'RESET' }),
   }), [state, persistenceError])
