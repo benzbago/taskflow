@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import {
   Archive, BarChart3, CalendarDays, Check, CheckCircle2, ChevronLeft, ChevronRight,
-  CirclePlus, Clock3, Copy, Download, Edit3, Inbox, LayoutDashboard, Menu, Moon,
+  CirclePlus, Clock3, Columns3, Copy, Download, Edit3, Inbox, LayoutDashboard, Menu, Moon,
   MoreHorizontal, Palette, Pin, Plus, RotateCcw, Search, Settings2, Sun, Tags,
   Target, Trash2, Upload, X,
 } from 'lucide-react'
@@ -13,14 +13,15 @@ import { analyticsData, filterTasks, makeId, sortTasks, taskMetrics } from './ut
 import { buildMonthGrid, formatDate, greeting, isOverdue, localDateKey } from './utils/dates'
 import { parseImport, serializeState } from './utils/storage'
 import FocusPage from './pages/FocusPage'
+import KanbanPage from './pages/KanbanPage'
 
 const NAV = [
   ['dashboard', 'Dashboard', LayoutDashboard], ['all', 'All tasks', Inbox], ['today', 'Today', Clock3],
   ['upcoming', 'Upcoming', CalendarDays], ['completed', 'Completed', CheckCircle2],
-  ['focus', 'Focus mode', Target], ['calendar', 'Calendar', CalendarDays], ['categories', 'Categories', Tags], ['analytics', 'Analytics', BarChart3],
+  ['focus', 'Focus mode', Target], ['kanban', 'Kanban board', Columns3], ['calendar', 'Calendar', CalendarDays], ['categories', 'Categories', Tags], ['analytics', 'Analytics', BarChart3],
 ]
 
-const PAGE_TITLES = { dashboard: 'Dashboard', all: 'All tasks', today: 'Today', upcoming: 'Upcoming', completed: 'Completed', focus: 'Focus mode', calendar: 'Calendar', categories: 'Categories', analytics: 'Productivity', appearance: 'Appearance', data: 'Data management' }
+const PAGE_TITLES = { dashboard: 'Dashboard', all: 'All tasks', today: 'Today', upcoming: 'Upcoming', completed: 'Completed', focus: 'Focus mode', kanban: 'Kanban board', calendar: 'Calendar', categories: 'Categories', analytics: 'Productivity', appearance: 'Appearance', data: 'Data management' }
 
 function useTheme(settings, setSettings) {
   useEffect(() => {
@@ -41,11 +42,11 @@ function Sidebar({ page, setPage, open, setOpen }) {
       <p className="nav-label">Main</p>
       {NAV.slice(0, 5).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span>{counts[id] ? <em>{counts[id]}</em> : null}</button>)}
       <p className="nav-label">Productivity</p>
-      {NAV.slice(5, 6).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
+      {NAV.slice(5, 7).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
       <p className="nav-label">Organize</p>
-      {NAV.slice(6, 8).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
+      {NAV.slice(7, 9).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
       <p className="nav-label">Insights</p>
-      {NAV.slice(8).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
+      {NAV.slice(9).map(([id, label, Icon]) => <button key={id} className={`nav-item ${page === id ? 'active' : ''}`} onClick={() => { setPage(id); setOpen(false) }}><Icon /> <span>{label}</span></button>)}
     </nav>
     <div className="sidebar-bottom"><button className={`nav-item ${page === 'appearance' ? 'active' : ''}`} onClick={() => { setPage('appearance'); setOpen(false) }}><Palette /> Appearance</button><button className={`nav-item ${page === 'data' ? 'active' : ''}`} onClick={() => { setPage('data'); setOpen(false) }}><Settings2 /> Data management</button><div className="storage-note"><Archive /> Stored privately in this browser</div></div>
   </aside>
@@ -170,6 +171,7 @@ function AppShell() {
     if (page === 'dashboard') return <Dashboard onNew={openNew} onEdit={openEdit} filters={filters} setFilters={setFilters} sort={sort} setSort={setSort} />
     if (['all', 'today', 'upcoming', 'completed'].includes(page)) return <ListPage page={page} onNew={openNew} onEdit={openEdit} filters={filters} setFilters={setFilters} sort={sort} setSort={setSort} />
     if (page === 'focus') return <FocusPage />
+    if (page === 'kanban') return <KanbanPage onEdit={openEdit} />
     if (page === 'calendar') return <CalendarPage onNew={openNew} onEdit={openEdit} />
     if (page === 'categories') return <CategoriesPage />
     if (page === 'analytics') return <AnalyticsPage />
