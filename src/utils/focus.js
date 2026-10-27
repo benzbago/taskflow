@@ -13,6 +13,7 @@ export function elapsedMs(session, now = Date.now()) {
 }
 
 export function remainingMs(session, now = Date.now()) {
+  if (!session) return 0
   return Math.max(0, session.durationMs - elapsedMs(session, now))
 }
 

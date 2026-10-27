@@ -42,4 +42,13 @@ describe('TaskFlow experience', () => {
     await user.keyboard('{Escape}')
     await waitForElementToBeRemoved(() => screen.queryByRole('dialog', { name: /new task/i }))
   })
+
+  test('new productivity pages are reachable from primary navigation', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    for (const label of ['Focus mode', 'Daily planner', 'Kanban board', 'Habit tracker']) {
+      await user.click(screen.getByRole('button', { name: label }))
+      expect(screen.getByRole('heading', { name: label, level: 1 })).toBeInTheDocument()
+    }
+  })
 })

@@ -27,4 +27,11 @@ describe('recurring completion', () => {
     const state = { ...createInitialState(), habits: [{ id: 'h' }], focusSessions: [{ id: 'f' }], dailyPlans: [{ id: 'p' }], activeFocusSession: { id: 'active' } }
     expect(taskFlowReducer(state, { type: 'RESET' })).toMatchObject({ habits: [], focusSessions: [], dailyPlans: [], activeFocusSession: null })
   })
+
+  test('duplicating a completed task creates a synchronized todo task', () => {
+    const state = createInitialState()
+    state.tasks = [{ id:'done', title:'Finished', status:'done', completed:true, completedAt:'2026-10-27T10:00:00.000Z' }]
+    const next = taskFlowReducer(state, { type:'DUPLICATE_TASK', id:'done' })
+    expect(next.tasks[0]).toMatchObject({ status:'todo', completed:false, completedAt:null })
+  })
 })

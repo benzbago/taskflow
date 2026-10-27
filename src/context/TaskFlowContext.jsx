@@ -13,7 +13,7 @@ export function taskFlowReducer(state, action) {
     case 'DELETE_TASK': return { ...state, tasks: state.tasks.filter((task) => task.id !== action.id) }
     case 'DUPLICATE_TASK': {
       const source = state.tasks.find((task) => task.id === action.id)
-      return source ? { ...state, tasks: [{ ...source, id: makeId(), title: `${source.title} copy`, completed: false, completedAt: null, createdAt: new Date().toISOString() }, ...state.tasks] } : state
+      return source ? { ...state, tasks: [{ ...source, id: makeId(), title: `${source.title} copy`, status: 'todo', completed: false, completedAt: null, createdAt: new Date().toISOString() }, ...state.tasks] } : state
     }
     case 'TOGGLE_TASK':
     case 'SET_TASK_STATUS': {
