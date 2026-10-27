@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useState } from 'react'
 import { createInitialState, loadState, saveState } from '../utils/storage'
 import { createRecurringTask, makeId, removeCategoryFromTasks } from '../utils/tasks'
+import { completeExpiredSession } from '../utils/focus'
 
 const TaskFlowContext = createContext(null)
 
@@ -32,6 +33,10 @@ export function taskFlowReducer(state, action) {
     case 'UPDATE_CATEGORY': return { ...state, categories: state.categories.map((category) => category.id === action.category.id ? { ...category, ...action.category } : category) }
     case 'DELETE_CATEGORY': return { ...state, categories: state.categories.filter((category) => category.id !== action.id), tasks: removeCategoryFromTasks(state.tasks, action.id) }
     case 'SET_SETTINGS': return { ...state, settings: { ...state.settings, ...action.settings } }
+    case 'START_FOCUS': return { ...state, activeFocusSession: action.session }
+    case 'UPDATE_ACTIVE_FOCUS': return { ...state, activeFocusSession: action.session }
+    case 'CLEAR_ACTIVE_FOCUS': return { ...state, activeFocusSession: null }
+    case 'COMPLETE_FOCUS': return state.focusSessions.some((session) => session.id === action.session.id) ? { ...state, activeFocusSession: null } : { ...state, activeFocusSession: null, focusSessions: [...state.focusSessions, action.session] }
     case 'IMPORT': return action.state
     case 'RESET': return createInitialState()
     default: return state
@@ -42,6 +47,7 @@ export function TaskFlowProvider({ children }) {
   const [state, dispatch] = useReducer(taskFlowReducer, undefined, () => loadState())
   const [persistenceError, setPersistenceError] = useState(false)
   useEffect(() => setPersistenceError(!saveState(state)), [state])
+  useEffect(() => { const result = completeExpiredSession(state.activeFocusSession, state.focusSessions); if (result.completed) dispatch({ type: 'COMPLETE_FOCUS', session: result.completed }) }, [])
   const api = useMemo(() => ({
     ...state, persistenceError,
     addTask: (task) => dispatch({ type: 'ADD_TASK', task }),
@@ -55,6 +61,10 @@ export function TaskFlowProvider({ children }) {
     updateCategory: (category) => dispatch({ type: 'UPDATE_CATEGORY', category }),
     deleteCategory: (id) => dispatch({ type: 'DELETE_CATEGORY', id }),
     setSettings: (settings) => dispatch({ type: 'SET_SETTINGS', settings }),
+    startFocus: (session) => dispatch({ type: 'START_FOCUS', session }),
+    updateActiveFocus: (session) => dispatch({ type: 'UPDATE_ACTIVE_FOCUS', session }),
+    clearActiveFocus: () => dispatch({ type: 'CLEAR_ACTIVE_FOCUS' }),
+    completeFocus: (session) => dispatch({ type: 'COMPLETE_FOCUS', session }),
     importState: (nextState) => dispatch({ type: 'IMPORT', state: nextState }),
     reset: () => dispatch({ type: 'RESET' }),
   }), [state, persistenceError])
