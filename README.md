@@ -74,4 +74,3 @@ netlify deploy --dir=dist --prod
 ```
 
 The included SPA redirect sends unknown paths to `index.html`. Task data remains in each visitor's local browser and is never uploaded to Netlify.
-
