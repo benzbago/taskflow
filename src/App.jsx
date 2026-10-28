@@ -64,7 +64,7 @@ import {
 } from './utils/dates'
 import {
   parseImport,
-  preserveCurrentWorkspace,
+  replaceStoredState,
   serializeState,
 } from './utils/storage'
 import FocusPage from './pages/FocusPage'
@@ -1258,9 +1258,9 @@ function DataPage() {
     try {
       const next = parseImport(await event.target.files[0].text())
       if (confirm('Replace this workspace with the imported backup?')) {
-        if (!preserveCurrentWorkspace())
+        if (!replaceStoredState(next))
           throw new Error(
-            'The current workspace could not be preserved. Free browser storage, then try again.',
+            'The imported workspace could not be saved. Your current data was not replaced. Free browser storage, then try again.',
           )
         state.importState(next)
         setMessage(
