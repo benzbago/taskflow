@@ -1,0 +1,45 @@
+import {
+  Activity,
+  BarChart3,
+  BrainCircuit,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  Columns3,
+  Inbox,
+  LayoutDashboard,
+  Tags,
+  Target,
+} from 'lucide-react'
+
+export const NAV = [
+  ['dashboard', 'Dashboard', LayoutDashboard],
+  ['all', 'All tasks', Inbox],
+  ['today', 'Today', Clock3],
+  ['upcoming', 'Upcoming', CalendarDays],
+  ['completed', 'Completed', CheckCircle2],
+  ['focus', 'Focus mode', Target],
+  ['planner', 'Daily planner', BrainCircuit],
+  ['kanban', 'Kanban board', Columns3],
+  ['habits', 'Habit tracker', Activity],
+  ['calendar', 'Calendar', CalendarDays],
+  ['categories', 'Categories', Tags],
+  ['analytics', 'Analytics', BarChart3],
+]
+
+export const PAGE_TITLES = {
+  dashboard: 'Dashboard',
+  all: 'All tasks',
+  today: 'Today',
+  upcoming: 'Upcoming',
+  completed: 'Completed',
+  focus: 'Focus mode',
+  planner: 'Daily planner',
+  kanban: 'Kanban board',
+  habits: 'Habit tracker',
+  calendar: 'Calendar',
+  categories: 'Categories',
+  analytics: 'Productivity',
+  appearance: 'Appearance',
+  data: 'Data management',
+}
