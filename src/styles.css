@@ -620,6 +620,37 @@ textarea {
   color: var(--muted);
   font-size: 13px;
 }
+.error-fallback {
+  align-content: center;
+}
+.error-fallback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+.error-details {
+  width: min(680px, 100%);
+  margin-top: 18px;
+  color: var(--muted);
+  text-align: left;
+}
+.error-details summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+.error-details pre {
+  max-height: 180px;
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
 .modal-backdrop {
   position: fixed;
   inset: 0;

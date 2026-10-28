@@ -71,6 +71,7 @@ import FocusPage from './pages/FocusPage'
 import KanbanPage from './pages/KanbanPage'
 import HabitsPage from './pages/HabitsPage'
 import DailyPlannerPage from './pages/DailyPlannerPage'
+import ErrorBoundary from './components/ErrorBoundary'
 
 const NAV = [
   ['dashboard', 'Dashboard', LayoutDashboard],
@@ -1411,18 +1412,33 @@ function AppShell() {
           setSort={setSort}
         />
       )
-    if (page === 'focus') return <FocusPage initialTaskId={focusTaskId} />
+    const pageBoundary = (scope, child) => (
+      <ErrorBoundary
+        key={scope}
+        scope={scope}
+        onBackToDashboard={() => setPage('dashboard')}
+      >
+        {child}
+      </ErrorBoundary>
+    )
+    if (page === 'focus')
+      return pageBoundary(
+        'Focus Mode',
+        <FocusPage initialTaskId={focusTaskId} />,
+      )
     if (page === 'planner')
-      return (
+      return pageBoundary(
+        'Daily Planner',
         <DailyPlannerPage
           onStartFocus={(taskId) => {
             setFocusTaskId(taskId)
             setPage('focus')
           }}
-        />
+        />,
       )
-    if (page === 'kanban') return <KanbanPage onEdit={openEdit} />
-    if (page === 'habits') return <HabitsPage />
+    if (page === 'kanban')
+      return pageBoundary('Kanban', <KanbanPage onEdit={openEdit} />)
+    if (page === 'habits') return pageBoundary('Habit Tracker', <HabitsPage />)
     if (page === 'calendar')
       return <CalendarPage onNew={openNew} onEdit={openEdit} />
     if (page === 'categories') return <CategoriesPage />
@@ -1500,10 +1516,12 @@ function AppShell() {
 
 export default function App() {
   return (
-    <MotionConfig reducedMotion="user">
-      <TaskFlowProvider>
-        <AppShell />
-      </TaskFlowProvider>
-    </MotionConfig>
+    <ErrorBoundary scope="TaskFlow">
+      <MotionConfig reducedMotion="user">
+        <TaskFlowProvider>
+          <AppShell />
+        </TaskFlowProvider>
+      </MotionConfig>
+    </ErrorBoundary>
   )
 }
