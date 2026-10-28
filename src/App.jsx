@@ -1309,6 +1309,7 @@ function DataPage() {
             ref={fileRef}
             hidden
             type="file"
+            aria-label="TaskFlow backup file"
             accept="application/json"
             onChange={upload}
           />

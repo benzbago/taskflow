@@ -51,5 +51,14 @@ export default [
       sourceType: 'module',
     },
   },
+  {
+    files: ['e2e/**/*.js'],
+    ...js.configs.recommended,
+    languageOptions: {
+      ecmaVersion: 'latest',
+      globals: globals.node,
+      sourceType: 'module',
+    },
+  },
   prettier,
 ]
