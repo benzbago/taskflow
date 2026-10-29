@@ -1,5 +1,11 @@
-import { describe, expect, test } from 'vitest'
-import { taskFlowReducer } from './TaskFlowContext'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, test, vi } from 'vitest'
+import {
+  TaskFlowProvider,
+  taskFlowReducer,
+  useTaskFlow,
+} from './TaskFlowContext'
 import { createInitialState } from '../utils/storage'
 
 describe('recurring completion', () => {
@@ -119,5 +125,125 @@ describe('recurring completion', () => {
       },
     })
     expect(next).toBe(state)
+  })
+
+  test('deduplicates focus completion and clears the matching active session', () => {
+    const completed = {
+      id: 'focus-1',
+      type: 'focus',
+      durationMs: 60_000,
+      startedAt: '2026-10-29T01:00:00.000Z',
+      completedAt: '2026-10-29T01:01:00.000Z',
+      date: '2026-10-29',
+    }
+    const state = {
+      ...createInitialState(),
+      activeFocusSession: { id: completed.id },
+      focusSessions: [completed],
+    }
+    const next = taskFlowReducer(state, {
+      type: 'COMPLETE_FOCUS',
+      session: completed,
+    })
+    expect(next.activeFocusSession).toBeNull()
+    expect(next.focusSessions).toEqual([completed])
+  })
+
+  test('keeps missing entities and unknown actions safe', () => {
+    const state = {
+      ...createInitialState(),
+      tasks: [
+        {
+          id: 'task-1',
+          title: 'Keep',
+          status: 'todo',
+          completed: false,
+          completedAt: null,
+          subtasks: [],
+        },
+      ],
+      habits: [],
+      dailyPlans: [
+        {
+          id: 'plan-1',
+          date: '2026-10-29',
+          availableMinutes: 30,
+          createdAt: '2026-10-29T00:00:00.000Z',
+          items: [{ id: 'item-1', taskId: 'deleted', allocatedMinutes: 30 }],
+        },
+      ],
+    }
+
+    expect(taskFlowReducer(state, { type: 'UNKNOWN' })).toBe(state)
+    expect(
+      taskFlowReducer(state, { type: 'DUPLICATE_TASK', id: 'missing' }),
+    ).toBe(state)
+    expect(
+      taskFlowReducer(state, {
+        type: 'TOGGLE_SUBTASK',
+        taskId: 'missing',
+        subtaskId: 'missing',
+      }),
+    ).toMatchObject({ tasks: state.tasks })
+    expect(
+      taskFlowReducer(state, {
+        type: 'TOGGLE_SUBTASK',
+        taskId: 'task-1',
+        subtaskId: 'missing',
+      }),
+    ).toMatchObject({ tasks: state.tasks })
+    expect(
+      taskFlowReducer(state, {
+        type: 'TOGGLE_HABIT',
+        id: 'missing',
+        date: '2026-10-29',
+      }),
+    ).toMatchObject({ habits: [] })
+    expect(
+      taskFlowReducer(state, { type: 'DELETE_TASK', id: 'missing' }).dailyPlans,
+    ).toEqual(state.dailyPlans)
+    expect(
+      taskFlowReducer(state, { type: 'DELETE_DAILY_PLAN', id: 'missing' })
+        .dailyPlans,
+    ).toEqual(state.dailyPlans)
+    const missingCategory = taskFlowReducer(state, {
+      type: 'DELETE_CATEGORY',
+      id: 'missing',
+    })
+    expect(missingCategory.categories).toEqual(state.categories)
+    expect(missingCategory.tasks).toEqual(state.tasks)
+  })
+})
+
+function PersistenceProbe() {
+  const state = useTaskFlow()
+  return (
+    <>
+      <span>{state.persistenceError ? 'Save failed' : 'Save ready'}</span>
+      <span>Tasks: {state.tasks.length}</span>
+      <button onClick={() => state.addTask({ title: 'In memory' })}>Add</button>
+    </>
+  )
+}
+
+describe('provider persistence failures', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  test('keeps in-memory state usable when LocalStorage writes fail', async () => {
+    localStorage.clear()
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('full', 'QuotaExceededError')
+    })
+    const user = userEvent.setup()
+    render(
+      <TaskFlowProvider>
+        <PersistenceProbe />
+      </TaskFlowProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByText('Save failed')).toBeVisible())
+    await user.click(screen.getByRole('button', { name: 'Add' }))
+    expect(screen.getByText('Tasks: 1')).toBeVisible()
+    expect(screen.getByText('Save failed')).toBeVisible()
   })
 })

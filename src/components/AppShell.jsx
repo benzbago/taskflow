@@ -58,6 +58,7 @@ export default function AppShell() {
     const handler = (event) => {
       if (
         event.key.toLowerCase() === 'n' &&
+        !document.querySelector('[role="dialog"]') &&
         !['INPUT', 'TEXTAREA', 'SELECT'].includes(
           document.activeElement?.tagName,
         )

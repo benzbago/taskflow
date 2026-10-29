@@ -102,6 +102,8 @@ export default function TaskForm({ task, initialDate, onClose }) {
             <input
               autoFocus
               value={form.title}
+              aria-invalid={error ? 'true' : undefined}
+              aria-describedby={error ? 'task-title-error' : undefined}
               onChange={(e) => {
                 set('title', e.target.value)
                 setError('')
@@ -110,7 +112,7 @@ export default function TaskForm({ task, initialDate, onClose }) {
             />
           </label>
           {error && (
-            <p className="form-error" role="alert">
+            <p id="task-title-error" className="form-error" role="alert">
               {error}
             </p>
           )}

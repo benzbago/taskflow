@@ -83,6 +83,13 @@ export default function FocusPage({ initialTaskId = null }) {
         </p>
         <div
           className="focus-clock"
+          role="timer"
+          aria-live="off"
+          aria-label={`${timer.active?.type.replace('-', ' ') || 'Focus session'}, ${clock(
+            timer.active
+              ? timer.remaining
+              : state.settings.focusMinutes * 60_000,
+          )} remaining, ${timer.active?.status || 'ready'}`}
           style={{ '--timer-progress': `${progress * 360}deg` }}
         >
           <div>

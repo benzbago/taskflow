@@ -8,6 +8,7 @@ export default function MobileNavigation({ page, setPage, onNew }) {
         <button
           key={id}
           className={page === id ? 'active' : ''}
+          aria-current={page === id ? 'page' : undefined}
           onClick={() => setPage(id)}
         >
           <Icon />

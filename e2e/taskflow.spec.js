@@ -243,3 +243,118 @@ test('rejects an invalid backup without replacing existing data', async ({
   }, storageKey)
   expect(storedTitles).toContain(title)
 })
+
+test('keeps the habit dialog keyboard-contained, validates, and restores focus', async ({
+  page,
+}) => {
+  await navigate(page, 'Habit tracker')
+  const trigger = page.getByRole('button', { name: 'New habit' })
+  await trigger.click()
+  const dialog = page.getByRole('dialog', { name: 'New habit' })
+  const title = dialog.getByLabel('Habit name')
+  await expect(dialog).toHaveAttribute('aria-modal', 'true')
+  await expect(title).toBeFocused()
+
+  await page.keyboard.press('Shift+Tab')
+  await expect(
+    dialog.getByRole('button', { name: 'Close habit form' }),
+  ).toBeFocused()
+  await page.keyboard.press('n')
+  await expect(page.getByRole('dialog', { name: 'New task' })).toHaveCount(0)
+  await page.keyboard.press('Shift+Tab')
+  await expect(dialog.getByRole('button', { name: 'Save habit' })).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(
+    dialog.getByRole('button', { name: 'Close habit form' }),
+  ).toBeFocused()
+
+  await dialog.getByRole('button', { name: 'Save habit' }).click()
+  const error = dialog.getByRole('alert')
+  await expect(error).toContainText('Give your habit a name')
+  await expect(title).toHaveAttribute('aria-invalid', 'true')
+  await expect(title).toHaveAttribute('aria-describedby', 'habit-title-error')
+
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(trigger).toBeFocused()
+
+  await trigger.click()
+  await page
+    .getByRole('dialog', { name: 'New habit' })
+    .getByLabel('Habit name')
+    .fill('Keyboard habit')
+  await page
+    .getByRole('dialog', { name: 'New habit' })
+    .getByRole('button', { name: 'Save habit' })
+    .click()
+  await expect(trigger).toBeFocused()
+
+  await trigger.click()
+  await page
+    .getByRole('dialog', { name: 'New habit' })
+    .getByRole('button', { name: 'Cancel' })
+    .click()
+  await expect(trigger).toBeFocused()
+
+  await trigger.click()
+  await page.locator('.modal-backdrop').click({ position: { x: 5, y: 5 } })
+  await expect(page.getByRole('dialog', { name: 'New habit' })).toBeHidden()
+  await expect(trigger).toBeFocused()
+})
+
+test('supports mobile Kanban tabs without intercepting task controls and announces moves', async ({
+  page,
+}) => {
+  const title = 'Keyboard Kanban task'
+  await createTask(page, title)
+  await navigate(page, 'Kanban board')
+  await page.setViewportSize({ width: 600, height: 900 })
+
+  const todo = page.getByRole('tab', { name: 'To Do' })
+  const progress = page.getByRole('tab', { name: 'In Progress' })
+  const done = page.getByRole('tab', { name: 'Done' })
+  await todo.focus()
+  await page.keyboard.press('ArrowLeft')
+  await expect(done).toBeFocused()
+  await expect(done).toHaveAttribute('aria-selected', 'true')
+  await page.keyboard.press('Home')
+  await expect(todo).toBeFocused()
+  await page.keyboard.press('ArrowRight')
+  await expect(progress).toBeFocused()
+  await page.keyboard.press('End')
+  await expect(done).toBeFocused()
+  await page.keyboard.press('Home')
+
+  const edit = page.getByRole('button', { name: `Edit ${title}` })
+  await edit.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(todo).toHaveAttribute('aria-selected', 'true')
+
+  await page.getByRole('button', { name: 'Move to In Progress' }).click()
+  await expect(page.getByRole('status')).toContainText(
+    `${title} moved to In Progress`,
+  )
+})
+
+test('exposes active-page semantics in desktop and mobile navigation', async ({
+  page,
+}) => {
+  const primary = page.getByRole('navigation', { name: 'Primary navigation' })
+  await expect(
+    primary.getByRole('button', { name: 'Dashboard' }),
+  ).toHaveAttribute('aria-current', 'page')
+
+  const mobile = page.locator('nav.mobile-nav')
+  await expect(
+    mobile.locator('button').filter({ hasText: 'Dashboard' }),
+  ).toHaveAttribute('aria-current', 'page')
+  await page.setViewportSize({ width: 600, height: 900 })
+  await mobile.getByRole('button', { name: 'Tasks' }).click()
+  await expect(mobile.getByRole('button', { name: 'Tasks' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  await expect(
+    page.locator('aside.sidebar').getByRole('button', { name: 'All tasks' }),
+  ).toHaveAttribute('aria-current', 'page')
+})

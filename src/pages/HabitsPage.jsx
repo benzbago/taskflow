@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   BookOpen,
   Check,
@@ -33,6 +33,8 @@ const DAYS = [
 
 function HabitForm({ habit, onClose }) {
   const state = useTaskFlow()
+  const [error, setError] = useState('')
+  const dialogRef = useRef(null)
   const [form, setForm] = useState(
     habit || {
       title: '',
@@ -49,17 +51,53 @@ function HabitForm({ habit, onClose }) {
     setForm((current) => ({ ...current, [key]: value }))
   const save = (e) => {
     e.preventDefault()
-    if (!form.title.trim()) return
+    if (!form.title.trim()) {
+      setError('Give your habit a name.')
+      return
+    }
     habit
       ? state.updateHabit({ ...form, title: form.title.trim() })
       : state.addHabit({ ...form, title: form.title.trim() })
     onClose()
   }
+  useEffect(() => {
+    const handleKey = (event) => {
+      if (event.key === 'Escape') return onClose()
+      if (
+        event.key !== 'Tab' ||
+        !dialogRef.current?.contains(document.activeElement)
+      )
+        return
+      const items = [
+        ...dialogRef.current.querySelectorAll('button,input,select,textarea'),
+      ].filter((item) => !item.disabled)
+      const first = items[0]
+      const last = items.at(-1)
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    addEventListener('keydown', handleKey)
+    return () => removeEventListener('keydown', handleKey)
+  }, [onClose])
   return (
-    <div className="modal-backdrop">
+    <div
+      className="modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target !== event.currentTarget) return
+        event.preventDefault()
+        onClose()
+      }}
+    >
       <section
+        ref={dialogRef}
         className="task-panel habit-panel"
         role="dialog"
+        aria-modal="true"
         aria-label={habit ? 'Edit habit' : 'New habit'}
       >
         <div className="panel-header">
@@ -81,10 +119,20 @@ function HabitForm({ habit, onClose }) {
             <input
               autoFocus
               value={form.title}
-              onChange={(e) => set('title', e.target.value)}
+              onChange={(e) => {
+                set('title', e.target.value)
+                setError('')
+              }}
+              aria-invalid={error ? 'true' : undefined}
+              aria-describedby={error ? 'habit-title-error' : undefined}
               placeholder="e.g. Practice React"
             />
           </label>
+          {error && (
+            <p id="habit-title-error" className="form-error" role="alert">
+              {error}
+            </p>
+          )}
           <label>
             Notes
             <textarea
@@ -202,6 +250,18 @@ export default function HabitsPage() {
     if (value) setSelectedValue(value)
   }
   const [editing, setEditing] = useState(null)
+  const returnFocus = useRef(null)
+  const openEditor = (habit = {}) => {
+    returnFocus.current = document.activeElement
+    setEditing(habit)
+  }
+  const closeEditor = () => {
+    setEditing(null)
+    queueMicrotask(() => {
+      if (returnFocus.current?.isConnected) returnFocus.current.focus()
+      returnFocus.current = null
+    })
+  }
   const week = Array.from({ length: 7 }, (_, i) => addDays(selected, i - 3))
   const month = buildMonthGrid(
     new Date(`${selected}T12:00:00`).getFullYear(),
@@ -246,7 +306,7 @@ export default function HabitsPage() {
             onChange={(e) => setSelected(e.target.value)}
           />
         </label>
-        <button className="primary-button" onClick={() => setEditing({})}>
+        <button className="primary-button" onClick={() => openEditor()}>
           <Plus /> New habit
         </button>
       </div>
@@ -285,7 +345,7 @@ export default function HabitsPage() {
                 <div className="habit-actions">
                   <button
                     className="icon-button"
-                    onClick={() => setEditing(habit)}
+                    onClick={() => openEditor(habit)}
                     aria-label={`Edit ${habit.title}`}
                   >
                     <Pencil />
@@ -315,7 +375,7 @@ export default function HabitsPage() {
             Try “Practice React,” “Exercise,” or “Read a book,” or review
             another date.
           </p>
-          <button className="primary-button" onClick={() => setEditing({})}>
+          <button className="primary-button" onClick={() => openEditor()}>
             <Plus /> Create a habit
           </button>
         </div>
@@ -372,10 +432,7 @@ export default function HabitsPage() {
         </article>
       </div>
       {editing && (
-        <HabitForm
-          habit={editing.id ? editing : null}
-          onClose={() => setEditing(null)}
-        />
+        <HabitForm habit={editing.id ? editing : null} onClose={closeEditor} />
       )}
     </>
   )

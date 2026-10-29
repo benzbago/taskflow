@@ -32,6 +32,7 @@ export default function Sidebar({ page, setPage, open, setOpen }) {
           <button
             key={id}
             className={`nav-item ${page === id ? 'active' : ''}`}
+            aria-current={page === id ? 'page' : undefined}
             onClick={() => {
               setPage(id)
               setOpen(false)
@@ -46,6 +47,7 @@ export default function Sidebar({ page, setPage, open, setOpen }) {
           <button
             key={id}
             className={`nav-item ${page === id ? 'active' : ''}`}
+            aria-current={page === id ? 'page' : undefined}
             onClick={() => {
               setPage(id)
               setOpen(false)
@@ -59,6 +61,7 @@ export default function Sidebar({ page, setPage, open, setOpen }) {
           <button
             key={id}
             className={`nav-item ${page === id ? 'active' : ''}`}
+            aria-current={page === id ? 'page' : undefined}
             onClick={() => {
               setPage(id)
               setOpen(false)
@@ -72,6 +75,7 @@ export default function Sidebar({ page, setPage, open, setOpen }) {
           <button
             key={id}
             className={`nav-item ${page === id ? 'active' : ''}`}
+            aria-current={page === id ? 'page' : undefined}
             onClick={() => {
               setPage(id)
               setOpen(false)
@@ -84,6 +88,7 @@ export default function Sidebar({ page, setPage, open, setOpen }) {
       <div className="sidebar-bottom">
         <button
           className={`nav-item ${page === 'appearance' ? 'active' : ''}`}
+          aria-current={page === 'appearance' ? 'page' : undefined}
           onClick={() => {
             setPage('appearance')
             setOpen(false)
@@ -93,6 +98,7 @@ export default function Sidebar({ page, setPage, open, setOpen }) {
         </button>
         <button
           className={`nav-item ${page === 'data' ? 'active' : ''}`}
+          aria-current={page === 'data' ? 'page' : undefined}
           onClick={() => {
             setPage('data')
             setOpen(false)

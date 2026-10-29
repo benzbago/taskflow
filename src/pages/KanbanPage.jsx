@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   CalendarDays,
   ChevronLeft,
@@ -23,8 +23,30 @@ export default function KanbanPage({ onEdit }) {
   const [filters, setFilters] = useState({ category: 'all', priority: 'all' })
   const [dragId, setDragId] = useState(null)
   const [mobileColumn, setMobileColumn] = useState('todo')
+  const [moveAnnouncement, setMoveAnnouncement] = useState('')
+  const tabRefs = useRef([])
   const tasks = filterKanbanTasks(state.tasks, filters)
-  const move = (id, status) => state.setTaskStatus(id, status)
+  const move = (id, status) => {
+    const task = state.tasks.find((item) => item.id === id)
+    state.setTaskStatus(id, status)
+    if (task) setMoveAnnouncement(`${task.title} moved to ${LABELS[status]}.`)
+  }
+  const selectMobileColumn = (index) => {
+    const next = (index + KANBAN_STATUSES.length) % KANBAN_STATUSES.length
+    setMobileColumn(KANBAN_STATUSES[next])
+    tabRefs.current[next]?.focus()
+  }
+  const handleTabKey = (event, index) => {
+    const targets = {
+      ArrowLeft: index - 1,
+      ArrowRight: index + 1,
+      Home: 0,
+      End: KANBAN_STATUSES.length - 1,
+    }
+    if (!(event.key in targets)) return
+    event.preventDefault()
+    selectMobileColumn(targets[event.key])
+  }
   return (
     <>
       <div className="board-toolbar">
@@ -58,12 +80,19 @@ export default function KanbanPage({ onEdit }) {
         </select>
       </div>
       <div className="kanban-mobile-tabs" role="tablist">
-        {KANBAN_STATUSES.map((status) => (
+        {KANBAN_STATUSES.map((status, index) => (
           <button
             role="tab"
+            id={`kanban-tab-${status}`}
+            aria-controls={`kanban-panel-${status}`}
             aria-selected={mobileColumn === status}
+            tabIndex={mobileColumn === status ? 0 : -1}
+            ref={(element) => {
+              tabRefs.current[index] = element
+            }}
             key={status}
             onClick={() => setMobileColumn(status)}
+            onKeyDown={(event) => handleTabKey(event, index)}
           >
             {LABELS[status]}
           </button>
@@ -77,13 +106,16 @@ export default function KanbanPage({ onEdit }) {
           return (
             <section
               key={status}
+              id={`kanban-panel-${status}`}
+              role="tabpanel"
+              aria-labelledby={`kanban-tab-${status}`}
               className={`kanban-column ${mobileColumn === status ? 'mobile-active' : ''}`}
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => dragId && move(dragId, status)}
             >
               <header>
                 <div>
-                  <span className={`status-dot ${status}`} />
+                  <span className={`status-dot ${status}`} aria-hidden="true" />
                   <h2>{LABELS[status]}</h2>
                 </div>
                 <em>{column.length}</em>
@@ -185,6 +217,9 @@ export default function KanbanPage({ onEdit }) {
           )
         })}
       </div>
+      <p className="sr-only" role="status" aria-live="polite">
+        {moveAnnouncement}
+      </p>
     </>
   )
 }

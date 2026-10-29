@@ -78,4 +78,34 @@ describe('task selectors', () => {
       ).completedToday,
     ).toBe(1)
   })
+
+  test('creates daily recurrences across month and year boundaries', () => {
+    expect(
+      createRecurringTask({
+        ...tasks[0],
+        completed: true,
+        recurrence: 'daily',
+        dueDate: '2026-12-31',
+      }).dueDate,
+    ).toBe('2027-01-01')
+    expect(
+      createRecurringTask({
+        ...tasks[0],
+        completed: true,
+        recurrence: 'daily',
+        dueDate: '2028-02-29',
+      }).dueDate,
+    ).toBe('2028-03-01')
+  })
+
+  test('creates weekly recurrences across calendar boundaries', () => {
+    expect(
+      createRecurringTask({
+        ...tasks[0],
+        completed: true,
+        recurrence: 'weekly',
+        dueDate: '2026-12-28',
+      }).dueDate,
+    ).toBe('2027-01-04')
+  })
 })

@@ -61,4 +61,29 @@ describe('timestamp focus sessions', () => {
     expect(result.completed.date).toBe('2026-10-26')
     expect(result.completed.completedAt).toBe(active.endsAt)
   })
+
+  test('leaves null and mismatched pause or resume requests unchanged', () => {
+    const running = createFocusSession({ now: 1_000, durationMinutes: 1 })
+    const paused = pauseFocusSession(running, 10_000)
+    expect(pauseFocusSession(null, 20_000)).toBeNull()
+    expect(pauseFocusSession(paused, 20_000)).toBe(paused)
+    expect(resumeFocusSession(null, 20_000)).toBeNull()
+    expect(resumeFocusSession(running, 20_000)).toBe(running)
+  })
+
+  test('force-completes a paused session using only elapsed focus time', () => {
+    const paused = pauseFocusSession(
+      createFocusSession({ now: 1_000, durationMinutes: 2 }),
+      31_000,
+    )
+    const result = completeExpiredSession(paused, [], 120_000, true)
+    expect(result.completed.durationMs).toBe(30_000)
+    expect(result.completed.completedAt).toBe(new Date(120_000).toISOString())
+  })
+
+  test('does not complete a still-running unexpired session', () => {
+    const active = createFocusSession({ now: 1_000, durationMinutes: 2 })
+    const result = completeExpiredSession(active, [], 31_000)
+    expect(result).toEqual({ active, completed: null })
+  })
 })
