@@ -22,37 +22,58 @@ TaskFlow is a responsive, offline-first personal task manager built with React, 
 
 ```text
 src/
+  components/  # App shell, error boundary, navigation, and task UI
   context/     # Reducer-backed application state and action API
   data/        # Default categories and shared option data
-  test/        # Test environment setup
-  utils/       # Dates, task selectors, metrics, validation, persistence
-  App.jsx      # Pages and reusable interface components
+  hooks/       # Pomodoro state and recovery integration
+  pages/       # Dashboard, productivity tools, and settings pages
+  test/        # Vitest environment setup
+  utils/       # Dates, domain calculations, migrations, and persistence
+  App.jsx      # Providers and application-level error containment
   styles.css   # Tailwind entry point and TaskFlow design system
+e2e/           # Chromium end-to-end workflows
 ```
 
 ## Run locally
 
-You need Node.js 20 or newer.
+Use Node.js 24, matching CI and the pinned development toolchain.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. Run the automated checks with:
+Open the local URL printed by Vite.
+
+## Quality checks
+
+Run the same release checks used by CI:
 
 ```bash
+npm run lint
+npm run format:check
 npm test -- --run
+npm run test:coverage
+npm run test:e2e
 npm run build
 ```
+
+Vitest writes text, HTML, JSON, and JSON-summary coverage reports to
+`coverage/`. The configured global and critical-business-logic thresholds make
+the coverage command fail if tested behavior regresses. Playwright runs the
+critical browser workflows separately in Chromium.
+
+Pull requests and pushes to `master` run these checks in GitHub Actions. CI
+also uploads the coverage report and any Playwright report or failure traces as
+short-lived workflow artifacts.
 
 ## How persistence works
 
 TaskFlow stores a versioned state document under `taskflow:v1` in browser LocalStorage. The key is retained for backward compatibility while the current document schema is version 2. Every reducer update is saved automatically. Tasks, categories, focus sessions, active timer state, habits, daily plans, theme, name, and display preferences survive refreshes and browser restarts.
 
-Version-1 data and backups are migrated automatically. Existing tasks keep their completion history and recurring relationships, while workflow status is derived safely. Before migration, the original payload is copied to `taskflow:recovery`. Exports use schema version 2; imports accept validated version-1 or version-2 backups.
+Version-1 data and backups are migrated automatically. Existing tasks keep their completion history and recurring relationships, while workflow status is derived safely. Before migration, the original payload is copied to `taskflow:recovery`. Exports use schema version 2; imports accept validated version-1 or version-2 backups. A valid current workspace is preserved before an import replaces it, and a failed write leaves the in-memory workspace available while TaskFlow displays a warning.
 
-LocalStorage belongs to one browser profile on one device. It does **not** sync automatically. Use Data Management → Export to download a JSON backup, then Import on another browser or device. Imports are structurally validated before the current workspace is replaced. If stored data is damaged or incompatible, TaskFlow starts safely with an empty workspace.
+LocalStorage belongs to one browser profile on one device. It does **not** sync automatically. Use Data Management → Export to download a JSON backup, then Import on another browser or device. Imports are structurally validated before the current workspace is replaced. If the primary record is damaged, TaskFlow restores a valid recovery copy when available; otherwise it starts with an empty workspace and preserves the damaged payload for manual recovery when browser storage permits. Clear data requires confirmation and resets tasks, habits, focus sessions, daily plans, categories, and settings to fresh defaults.
 
 ## Deploy to Netlify
 
@@ -74,4 +95,3 @@ netlify deploy --dir=dist --prod
 ```
 
 The included SPA redirect sends unknown paths to `index.html`. Task data remains in each visitor's local browser and is never uploaded to Netlify.
-

@@ -3,7 +3,13 @@ import { filterKanbanTasks, moveTaskInColumn, nextKanbanStatus } from './kanban'
 
 const tasks = [
   { id: 'a', status: 'todo', priority: 'high', categoryId: 'work', order: 2 },
-  { id: 'b', status: 'todo', priority: 'low', categoryId: 'personal', order: 1 },
+  {
+    id: 'b',
+    status: 'todo',
+    priority: 'low',
+    categoryId: 'personal',
+    order: 1,
+  },
 ]
 
 describe('kanban helpers', () => {
@@ -14,10 +20,17 @@ describe('kanban helpers', () => {
   })
 
   test('filters by priority and category', () => {
-    expect(filterKanbanTasks(tasks, { priority: 'high', category: 'work' }).map((task) => task.id)).toEqual(['a'])
+    expect(
+      filterKanbanTasks(tasks, { priority: 'high', category: 'work' }).map(
+        (task) => task.id,
+      ),
+    ).toEqual(['a'])
   })
 
   test('assigns stable order when moving inside a column', () => {
-    expect(moveTaskInColumn(tasks, 'a', 0).map((task) => task.id)).toEqual(['a', 'b'])
+    expect(moveTaskInColumn(tasks, 'a', 0).map((task) => task.id)).toEqual([
+      'a',
+      'b',
+    ])
   })
 })

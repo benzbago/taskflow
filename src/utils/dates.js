@@ -17,7 +17,9 @@ export function addDays(key, amount) {
 }
 
 export function formatDate(key, options = { month: 'short', day: 'numeric' }) {
-  return parseLocalDate(key)?.toLocaleDateString(undefined, options) || 'No date'
+  return (
+    parseLocalDate(key)?.toLocaleDateString(undefined, options) || 'No date'
+  )
 }
 
 export function isOverdue(task, today = localDateKey()) {
@@ -30,8 +32,16 @@ export function buildMonthGrid(year, month) {
   const start = new Date(year, month, 1 - first.getDay())
   const end = new Date(year, month, last.getDate() + (6 - last.getDay()))
   const days = []
-  for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
-    days.push({ key: localDateKey(cursor), day: cursor.getDate(), inMonth: cursor.getMonth() === month })
+  for (
+    let cursor = new Date(start);
+    cursor <= end;
+    cursor.setDate(cursor.getDate() + 1)
+  ) {
+    days.push({
+      key: localDateKey(cursor),
+      day: cursor.getDate(),
+      inMonth: cursor.getMonth() === month,
+    })
   }
   return days
 }
@@ -42,4 +52,3 @@ export function greeting(date = new Date()) {
   if (hour < 18) return 'Good afternoon'
   return 'Good evening'
 }
-
